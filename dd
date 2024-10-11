@@ -1,0 +1,176 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players["LocalPlayer"]
+local ChangeFlagImageRemote = ReplicatedStorage:WaitForChild("ChangeFlagImage")
+
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/VisualRoblox/Roblox/main/UI-Libraries/Visual%20UI%20Library/Source.lua"))()
+local Window = Library:CreateWindow("BitProxy", "LGBTQ Hangout", "BitsProxy - Hub", "rbxassetid://17583328021", false, "bitFAGGOT_v1", "Discord")
+
+local InfoTab = Window:CreateTab("Gamepasses", true, "rbxassetid://18135354552", Vector2.new(0,0), Vector2.new(0,0))
+
+local function insertObject(ID)
+	local Object = game:GetObjects("rbxassetid://" .. tostring(ID))[1]:Clone()
+	return Object
+end
+
+function NewRadioFunction()
+	local RadioModule = {}
+	local Play = Workspace:WaitForChild("DRadio_Script"):WaitForChild("Event")
+	local Stop = Workspace:WaitForChild("DRadio_Script"):WaitForChild("STOPEvent")
+	RadioModule.ID = 0
+	RadioModule.Playing = false
+	function RadioModule.playRadio(self, id)
+		id = tonumber(id)
+		if id == nil then
+			id = self.ID
+		end
+		Play:FireServer(id)
+		self.ID = id
+		self.Playing = true
+	end
+	function RadioModule.stopRadio(self)
+		if self.Playing == true then
+			Stop:FireServer(true)
+			self.Playing = false
+		end
+	end
+	return RadioModule
+end
+local RadioFunctions = NewRadioFunction()
+
+local function RunBackgroundFunction(asyncFunction, ...)
+	local args = {...}
+	spawn(function()
+		pcall(function()
+			asyncFunction(unpack(args))
+		end)
+	end)
+end
+
+local function GetPlayers(str)
+	str = tostring(str):lower()
+	if str == "" or str == "me" or str == nil then
+		return {LocalPlayer}
+	end
+	if str == "all" or str == "everyone" then return Players:GetPlayers() end
+	if str:find("others") then
+		local plrs = {}
+		for _, player in pairs(Players:GetPlayers()) do
+			if player ~= LocalPlayer then
+				table.insert(plrs, player)
+			end
+		end
+		return plrs
+	end
+	local players = {}
+	for i, v in pairs(Players:GetPlayers()) do
+		if string.find(v.Name:lower(), str) then
+			table.insert(players, v)
+		end
+	end
+	return players
+end
+
+local function GetHttp(url)
+	local success, data = pcall(function()
+		return game:HttpGet(url)
+	end)
+	if not success then
+		wait(0.25)
+		return GetHttp(url)
+	end
+	return data
+end
+
+local function SplitIDs(id)
+	id = string.gsub(tostring(id),"\32","")
+	local split = string.split(id, ",")
+	return split
+end
+
+local function ChangeFlagID(flag, id)
+	ChangeFlagImageRemote:FireServer(flag, tostring(id))
+end
+
+-- > Gamepasses < --
+RunBackgroundFunction(function()
+	if LocalPlayer:FindFirstChildWhichIsA("PlayerGui") and LocalPlayer:FindFirstChildWhichIsA("PlayerGui"):FindFirstChild("DRadio_Gui") then
+		LocalPlayer:FindFirstChildWhichIsA("PlayerGui"):FindFirstChild("DRadio_Gui"):Destroy()
+	end
+	-- Flags
+	local Flags = InfoTab:CreateSection("Flags")
+	local timeStamp = 0.067
+	local imageId = "0"
+	local plrz = "me"
+	local function changePlayersFlags()
+		local players = GetPlayers(plrz)
+		for _, player in pairs(players) do
+			if player.Character and player.Character:FindFirstChild("Flag") then
+				local flag = player.Character:FindFirstChild("Flag")
+				if flag:IsA("Tool") then
+					spawn(function()
+						local ids = SplitIDs(imageId)
+						for _, assetId in pairs(ids) do
+							ChangeFlagID(flag, assetId)
+							wait(timeStamp)
+						end
+					end)
+				end
+			end
+		end
+	end
+	Flags:CreateButton("Change Flag", function()
+		changePlayersFlags()
+	end)
+	Flags:CreateTextbox("Image ID", "0", function(value)
+		imageId = value
+	end)
+	Flags:CreateTextbox("Set Players", "me", function(value)
+		plrz = value
+	end)
+	Flags:CreateKeybind("Toggle Change Flags", "F", function()
+		changePlayersFlags()
+	end)
+	Flags:CreateImage("scritches uwu", "rbxassetid://18126480053", UDim2.new(0, 200, 0, 200))
+	-- Radio
+	local Radio = InfoTab:CreateSection("Radio")
+	local function toggleRadio()
+		local playing = RadioFunctions.Playing
+		if playing == true then
+			RadioFunctions:stopRadio()
+		else
+			RadioFunctions:playRadio()
+		end
+	end
+	Radio:CreateParagraph("Info", "This can be used if you have a radio on you. This cannot affect other players Radios.")
+	Radio:CreateKeybind("Toggle Radio", "M", function()
+		toggleRadio()
+	end)
+	Radio:CreateTextbox("Audio ID", "Insert ID", function(value)
+		if tonumber(value) then
+			RadioFunctions:playRadio(tonumber(value))
+		end
+	end)
+	Radio:CreateButton("Stop Radio", function()
+		RadioFunctions:stopRadio()
+	end)
+	Radio:CreateButton("Play Radio", function()
+		RadioFunctions:playRadio()
+	end)
+	LocalPlayer:FindFirstChildWhichIsA("PlayerGui").ChildAdded:Connect(function(char)
+		if char.Name == "DRadio_Gui" then
+			char:Destroy()
+		end
+	end)
+end)
+
+
+
+Library:CreatePrompt("OneButton", "Welcome!", "hi faggot, bits made this script -w-", {
+	"ok fag", function()
+		warn("man fuck you")
+	end
+})
